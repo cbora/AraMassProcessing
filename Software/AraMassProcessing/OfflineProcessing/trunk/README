@@ -1,0 +1,6 @@
+This is the directory for the ARA data processing system.
+To use the system run ./run.pl (./run.pl -h for help).
+To being able to submit Condor jobs (default behaviour), you need to run the system from npx3 machine. ssh to pub2.icecube.wisc.edu, then ssh to npx3
+/Code directory contains all working codes: scripts and condor job file.
+/Data directory contains job description files, logs (main, physics, system) and
+results of the processing.
