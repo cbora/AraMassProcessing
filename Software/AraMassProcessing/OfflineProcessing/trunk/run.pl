@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 #use strict;
-use lib 'Code';	# To make compiler aware about config.pm location in Code/ directory
+use lib 'UserCode';   #To make compiler aware about config.pm location in Framework/ directory
 use config;
 use Data::Dumper;
 
@@ -30,7 +30,6 @@ sub PrintHelp{
 	exit(1);
 }
 
-#do 'Code/config.pl';
 
 my %initCommandLine = ();
 my %initConfigFile = ();
@@ -100,7 +99,14 @@ my $mainLog = "$resultsDir/Logs/main.log";
 
 # Check for asynchronous execution
 if ($Init{'ASYN'}){
+	# This script launches another instance of the same script in the background,
+	# but with the key '-syn' at the end, which overrides asynchronous
+	# since command line arguments have highest priority
+	# and the latest key has more priority (-syn will be the last key)
+	# However, this will affect 'Initial command line:' line of the report by adding '-syn' key
+	# which was not entered by a user
 	print "system = " . system("perl run.pl @ARGVinit -syn >& /dev/null &")."\n";
+	
 	# There is a possibility for time stamps to be different in this process and in the background
 	# So, if it is different try +-1 sec
 	print "The background process has been launched to process your request.\n";
@@ -118,18 +124,20 @@ if ($Init{'ASYN'}){
 # Create directory structure for the results
 CreateIfNotExist("$resultsDir");
 
-print `cp -r Code/DirStructure/* $resultsDir/`;
 
+print `cp -r Framework/DirStructure/* $resultsDir/`;
 print "Dublicate STDOUT to the file $mainLog\n";
 open(STDOUT, "| tee -ai $mainLog") or die "Cannot tee to $mainLog : $!";
 
 print "|-----------------------------|\n";
 print "| Collecting files to process |\n";
 print "|-----------------------------|\n";
-#$res1 = `perl Code/fileList.pl $directory $DEFAULT_RESULTS_PATH/$date/Input/L0filesToProcess.txt`;
-#print "$res1\n";
-do "Code/fileList2.pl";
-$template = $Init{'TEMPLATE'};#"*.root";
+
+do "Framework/fileList2.pl";
+#Get template of files to process
+$template = $Init{'TEMPLATE'};#"*.TestBed.L0.root";
+
+
 ($pList, $pNumber) = FindFiles($Init{'DATA_PATH'}, $template, $Init{'FROM'}, $Init{'TO'});
 @fileList = @{$pList};
 $totNum = ${$pNumber};
@@ -143,14 +151,16 @@ if (scalar(@fileList) == 0) {
 	close(STDOUT);
 	exit 0;
 }
+
 PrintFileListToFile(\@fileList, \"$Init{'RESULTS_PATH'}/$date/Input/L0filesToProcess.txt");
+
 
 print "|-----------------------------|\n";
 print "| Creating separate job files |\n";
 print "|-----------------------------|\n";
 
-#$res2 = `perl Code/loadBalance.pl $DEFAULT_RESULTS_PATH/$date/Input/L0filesToProcess.txt $DEFAULT_RESULTS_PATH/$date/Input/`;
-do "Code/loadBalance.pl";
+
+do "Framework/loadBalance.pl";
 $totalFiles = SeparateTasks("$Init{'RESULTS_PATH'}/$date/Input/L0filesToProcess.txt", "$Init{'RESULTS_PATH'}/$date/Input/", $Init{'FILE_LIMIT'});
 print "Total files = $totalFiles\n";
 #exit 0;
@@ -159,7 +169,8 @@ print "|-----------------------------|\n";
 print "|  Submitting jobs to Condor  |\n";
 print "|-----------------------------|\n";
 
-do 'Code/condorSubmit.pl';
+
+do 'Framework/condorSubmit.pl';
 #print Dumper({%Init});
 $clusterID = SubmitCondorJob($totalFiles, "$Init{'RESULTS_PATH'}/$date/");
 print "Jobs are submitted on the cluster: $clusterID\n";
@@ -199,7 +210,7 @@ sub CompileReport {
 	# Get time stamp string of the processing end
 	$dateEnd = GetDateString();
 
-	do "Code/xmlStatistics.pl";
+       	do "Framework/xmlStatistics.pl";
 	# Prepare statistics from this execution unit (run.pl)
 	my $stat = CreateStat('run.pl');
 
@@ -208,7 +219,7 @@ sub CompileReport {
 	AddValue($stat, {'name'=>'Not processed/condor section failure', 'digest'=>'sum', 'content'=>scalar(@fileList)});
 
 	AddValue($stat, {'name'=>'Total submitted', 'digest'=>'copy', 'content'=>$totalFiles});
-#AddValue($stat, {'name'=>'Completed normally', 'digest'=>'sum', 'content'=>$totalFiles - $numberOfRemovedJobs});
+        #AddValue($stat, {'name'=>'Completed normally', 'digest'=>'sum', 'content'=>$totalFiles - $numberOfRemovedJobs});
 	AddValue($stat, {'name'=>'Killed/time out', 'digest'=>'sum', 'content'=>$numberOfRemovedJobs});
 
 	AddValue($stat, {'name'=>'Initial command line', 'digest'=>'copy', 'content'=>$argsString});
@@ -283,7 +294,7 @@ sub CompileReport {
 # Send report.txt as an e-mail to the user(s)
 sub SendReport {
 	# Send text file to users
-	do "Code/email.pm";
+        do "Framework/email.pm";
 	
 	my $report = @_[0];
 	$reportFile = "$Init{'RESULTS_PATH'}/$date/Logs/report.txt";
@@ -296,7 +307,17 @@ sub SendReport {
 	print "Report file location: $reportFile\n";
 	$subject = "ARA processing results on $date";
 	send_mail($subject, $reportFile, $Init{'EMAILS'});
+	
 
+        #removing files unwanted files sent back by condor
+	$fileToDelete= `ls -1 UserCode/ | awk '{ ORS=" "; print; }' `;
+	print $fileToDelete . "\n";
+	`rm $fileToDelete`;
+	`rm myL2vrtx_compile*`;
+	`rm GridVtx*`;
+	`rm zout.txt`;
+	`rm archive.tar.gz`;
+        
 	print "|---------------------------|\n";
 	print "|           Done!           |\n";
 	print "|---------------------------|\n";
