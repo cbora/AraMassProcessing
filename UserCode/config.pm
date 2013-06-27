@@ -10,7 +10,8 @@ our @EXPORT = qw(%init);
 # that will be loaded at the beginning
 
 # default path to the directory with input L0 data (only absolute path)
-$DEFAULT_DATA_PATH = "/data/exp/ARA/2011/filtered/L0/";
+#$DEFAULT_DATA_PATH = "/data/exp/ARA/2011/filtered/L0/"; # for 2011 L0data files
+$DEFAULT_DATA_PATH = "/data/exp/ARA/2012/filtered/L0/"; #for 2012 L0 data files
 $init{'DATA_PATH'} = $DEFAULT_DATA_PATH;
 
 # default results path (relative part is allowed)
@@ -30,8 +31,9 @@ $init{'TRY_LENGTH'} = 60;	# 1 min
 # default email addresses to send report about processing results
 # escape [at] symbol with a backslash (\@)
 # list multiple addresses using comma (test1\@wisc.edu, test2\@wisc.edu)
-$DEFAULT_EMAILS = "";#"savdeev\@cse.unl.edu";
+$DEFAULT_EMAILS = "";#"borachristian\@gmail.com";
 $init{'EMAILS'} = $DEFAULT_EMAILS;
 
 # default template for searching data-files
-$init{'TEMPLATE'} = '*.root';
+#$init{'TEMPLATE'} = '*.root';
+$init{'TEMPLATE'} = '*.TestBed.L1.root'; #template for 2012 L1 data files 
