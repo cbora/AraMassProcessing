@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<config>
+	<!--<DATA_PATH>/data/exp/ARA/2011/filtered/L0/</DATA_PATH>
+	<RESULTS_PATH>/home/savdeev/Processing/Data/</RESULTS_PATH>-->
+	<!--<FILE_LIMIT>10</FILE_LIMIT>-->
+	<MAX_TRIES>2000</MAX_TRIES>
+	<TRY_LENGTH>60</TRY_LENGTH>
+	<EMAILS>savdeev@cse.unl.edu</EMAILS>
+</config>
