@@ -7,27 +7,52 @@ use File::Basename;
 # the basename of this files should be equal or greater than $to and
 # less or equal to $from (lexically)
 sub FindFiles {
-	my $directoryPath = @_[0];#"/data/exp/ARA/2012/filtered/L0/0101/";
-	my $rootFileExtension = @_[1];#"*.root";
-	my $from = @_[2];
-	my $to = @_[3];
+    my $directoryPath = @_[0];#"/data/exp/ARA/2012/filtered/L0/0101/";                                                                                                                     
+    my $rootFileExtension = @_[1];#"*.root";                                                                                                                                               
+    my $from = @_[2];
+    my $to = @_[3];
+ 
+    my $oneLineFindResults = `find $directoryPath -name \"$rootFileExtension\"`;
 
-	my $oneLineFindResults = `find $directoryPath -name \"$rootFileExtension\"`;
-	my @findResults = split /\n/, $oneLineFindResults;
-	
-	my @fileList;
+    my @findResults = split /\n/, $oneLineFindResults;
+    my @fileList;
+
+
+#check if basename of from and to has the same length                                                                                                                                      
+    $fromlength= length $from;
+    $tolength= length $to;
+    if($fromlength != $tolength){
+       #if the lenght of the from and to is not equal                                   
+        my ($fromstr)=$from =~ /(\d+)/;
+        my ($tostr)=$to =~ /(\d+)/;
+        $fromstr="0".$fromstr;
+	my ($tol) =length $tostr;
 
 	for my $full (@findResults) {
-		$basename = basename($full);
-		if ((!defined($from) or $basename ge $from) and (!defined($to) or $basename le $to)) {
-			push(@fileList, $full);
-		}
+	    $basename = basename($full);
+             my ($basenamestr)= $basename =~ /(\d+)/;
+             my $basenamelength = length $basenamestr;
+	    if($basenamelength != $tol){
+		$basenamestr = "0".$basenamestr;
+	    }
+	    if((!defined($fromstr) or $basenamestr ge $fromstr) and (!defined($tostr) or $basenamestr le $tostr)) {
+		push (@fileList, $full);
+	    }
 	}
-	@fileList = sort(@fileList);
-	my $tot = @findResults;
-	#my $tot1 = @fileList;
-	#print "tot1 = $tot, tot2 = $tot1\n";
-	return (\@fileList, \$tot);
+    }else{
+	for my $full (@findResults) {
+	    $basename = basename($full);
+	    if ((!defined($from) or $basename ge $from) and (!defined($to) or $basename le $to)) {
+		push(@fileList, $full);
+	    }
+	}
+    }
+    @fileList = sort(@fileList);
+    my $tot = @findResults;
+ 
+    return (\@fileList, \$tot);
+
+
 }
 
 # Prints file list to a file
