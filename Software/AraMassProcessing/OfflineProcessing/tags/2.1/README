@@ -1,0 +1,59 @@
+*************************************************
+* AraMassProcessing                             *
+*                                               *
+* Author: Sergey Avdeev, Christian Bora         *
+*                                               *
+* For help and support: borachristian@gmail.com *
+*************************************************
+
+Welcome to the directory of Ara mass processing system
+wiki page: http://ara.physics.wisc.edu/wiki/index.php/Processing_System
+
+
+OVERVIEW:
+
+- run.pl - Top script to start the the system (./run.pl -h for help)
+
+- setEnv_3.3.sh - for AraRoot version 3.3
+
+- setEnv_1.7.sh - for AraRoot version 1.7
+
+- setEnv_1.6.sh - for AraRoot version 1.6
+
+- Framework/ directory contains all working codes: scripts and condor job file
+
+- UserCode/ directory to contain the user's analysis executable and necessary files used by user's analysis ( e.g. header files)
+
+- UserCode/config.pm : configuration script (it is very short and has enough comments)
+
+- UserCode/compile.C : script to be used if user's analysis needs to be compiled
+
+- Data/ : Default location to contain all output files, contains job description files, logs (main, physics, system) and results of the processing
+  	- Data/Results/ should contain all output root files
+  	- Data/Results/NonRootOutput should contain non root output files 
+
+
+USAGE:
+
+- Make sure you are running the system from NPX4 machine. 
+       - First ssh to pub.icecube.wisc.edu, 
+       - then ssh to npx4
+  
+- Modify config.pm to meet your needed configurations
+
+- source setEnv_?.?.sh - to set up environmnt for your desired AraRoot version
+
+- To start the system run 
+     	   ./run.pl -dir ... -from ... -to ... -email ... -asyn (./run.pl -h for help)
+   
+     The command line argument should look something like this
+     	" ./run.pl -dir /data/exp/ARA/2011/filtered/L0/ -from runXXXXX.root -to runYYYYY.root -email emailme@email.com -asyn " 
+ 
+
+
+
+
+
+
+
+
