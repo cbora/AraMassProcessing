@@ -4,6 +4,7 @@
 use lib 'UserCode';   #To make compiler aware about config.pm location in Framework/ directory
 use config;
 use Data::Dumper;
+use Tie::File;
 
 package main;
 require Exporter;
@@ -20,16 +21,23 @@ sub GetDateString;
 $date = GetDateString(); #"2012-08-14_11:02:59";
 
 sub PrintHelp{
-	print "run.pl usage:
+    print "run.pl usage:
 		-dir directory where input files are collected
 		-from file name or path + file name  of the starting file
 		-to file name or path + file name  of the finishing file
 		-asyn asynchronous execution (user may logout after hitting enter)
-		-email user e-mail for sending report\n";
+		-email user e-mail for sending report
+                -type \"root\" or \"raw\" 
+
+=> Visit http://ara.physics.wisc.edu/wiki/index.php/Processing_System for further documentation \n";
 	#$switch = undef if $switch;
 	exit(1);
 }
 
+sub PrintHelpRoot{
+    print "run.pl usage: ";
+
+}
 
 my %initCommandLine = ();
 my %initConfigFile = ();
@@ -63,7 +71,11 @@ while (1)
 		#print "-email $email\n";
 	} elsif ($switch eq "-h" or $switch eq "--help" or $switch eq "-help") {
 		PrintHelp();
-	} elsif ($switch eq '-config') {
+	} elsif ($switch eq "-mode") { #specifying data type
+	    $initCommandLine{'MODE'} = shift;
+	} elsif($switch eq "-template") {#specifying template of which files to process
+	    $initCommandLine{'TEMPLATE'} =shift;   
+        } elsif ($switch eq '-config') {
 		$configFileName = shift;
 		print "-config $configFileName\n";
 		if (defined $configFileName) {
@@ -125,25 +137,82 @@ if ($Init{'ASYN'}){
 CreateIfNotExist("$resultsDir");
 
 
-print `cp -r Framework/DirStructure/* $resultsDir/`;
-print "Dublicate STDOUT to the file $mainLog\n";
-open(STDOUT, "| tee -ai $mainLog") or die "Cannot tee to $mainLog : $!";
 
+$dataType= $Init{'MODE'};
+my $mode;
+if(($dataType eq "root")||($dataType eq "Root")||($dataType eq "ROOT")){
+    print `cp -r Framework/DirStructure/* $resultsDir/`;
+    print "Dublicate STDOUT to the file $mainLog\n";
+    open(STDOUT, "| tee -ai $mainLog") or die "Cannot tee to $mainLog : $!";
+    
+    print "|-----------------------------|\n";
+    print "| MODE : Root files           |\n";
+    print "|-----------------------------|\n";
+
+    print "\n";
+#mode = 1 for root files
+    $mode=1; 
+}
+elsif(($dataType eq "raw")||($dataType eq "Raw")||($dataType eq "RAW")) {
+    print `cp -r Framework/DirStructureRawData/* $resultsDir/`;
+    print "Dublicate STDOUT to the file $mainLog\n";
+    open(STDOUT, "| tee -ai $mainLog") or die "Cannot tee to $mainLog : $!";
+    print "|-----------------------------|\n";
+    print "| MODE : Raw data             |\n";
+    print "|-----------------------------|\n";
+    
+    print "\n";
+#mode =2 for raw files
+     $mode=2; 
+}else {
+    print `cp -r Framework/DirStructureRawData/* $resultsDir/`;
+    print "Dublicate STDOUT to the file $mainLog\n";
+    open(STDOUT, "| tee -ai $mainLog") or die "Cannot tee to $mainLog : $!";
+    print "|-----------------------------|\n";
+    print "| MODE DOES NOT EXIST         |\n";
+    print "|-----------------------------|\n";
+    print "| EXITING SYSTEM              |\n";
+    print "|-----------------------------|\n";
+    exit(0);
+}
+	
+      
+#print "mode is $mode \n";
+#exit(0);
 print "|-----------------------------|\n";
 print "| Collecting files to process |\n";
 print "|-----------------------------|\n";
 
-do "Framework/fileList2.pl";
-#Get template of files to process
 $template = $Init{'TEMPLATE'};#"*.TestBed.L0.root";
+#print "$Init{'DATA_PATH'} \n";
+#print "$Init{'FROM'} \n";
+#print "$Init{'TO'} \n";
+#print "$template \n";
 
 
-($pList, $pNumber) = FindFiles($Init{'DATA_PATH'}, $template, $Init{'FROM'}, $Init{'TO'});
+#print "data Type" . $dataType . "\n";
+my $pList;
+my $pNumber;
+if($mode == 1){
+    do "Framework/fileList2.pl";
+    ($pList, $pNumber) = FindFiles($Init{'DATA_PATH'}, $template, $Init{'FROM'}, $Init{'TO'});
+ #   print "in root data type \n";
+}else{
+    do "Framework/fileListRawData.pl";
+#Get template of files to process
+  #  print "in raw data type \n";
+
+    ($top, $bottom) = GetFromToFullPath($Init{'DATA_PATH'}, $Init{'FROM'}, $Init{'TO'}, $template);   #this added for raw data
+    ($pList, $pNumber) = FindFiles($Init{'DATA_PATH'}, $template, $top, $bottom);    #changed for raw data
+#($pList, $pNumber) = FindFiles($Init{'DATA_PATH'}, $template, $Init{'FROM'}, $Init{'TO'});    #changed for raw data
+}
 @fileList = @{$pList};
 $totNum = ${$pNumber};
 print "Files matching template \"$template\" : $totNum\n";
 print "Files satisfying the from-to criteria: " . scalar(@fileList) . "\n";
 #print "@fileList\n totNum = $totNum\n";
+#exit 1;
+#exit 0;
 if (scalar(@fileList) == 0) {
 	print "|-----------------------------|\n";
 	print "| Nothing to do. Terminating  |\n";
@@ -159,29 +228,52 @@ print "|-----------------------------|\n";
 print "| Creating separate job files |\n";
 print "|-----------------------------|\n";
 
-
+my $totalFiles;
+if($mode == 1){
 do "Framework/loadBalance.pl";
+$totalFiles = SeparateTasks("$Init{'RESULTS_PATH'}/$date/Input/L0filesToProcess.txt", "$Init{'RESULTS_PATH'}/$date/Input", $Init{'FILE_LIMIT'});
+}else{
+do "Framework/loadBalanceRawData.pl";
 $totalFiles = SeparateTasks("$Init{'RESULTS_PATH'}/$date/Input/L0filesToProcess.txt", "$Init{'RESULTS_PATH'}/$date/Input/", $Init{'FILE_LIMIT'});
+}
 print "Total files = $totalFiles\n";
 #exit 0;
-
+#exit 1;   #for testing cbora
 print "|-----------------------------|\n";
 print "|  Submitting jobs to Condor  |\n";
 print "|-----------------------------|\n";
 
-
 do 'Framework/condorSubmit.pl';
+my $clusterID;
+if($mode == 1){
 #print Dumper({%Init});
 $clusterID = SubmitCondorJob($totalFiles, "$Init{'RESULTS_PATH'}/$date/");
+}else{
+$clusterID = SubmitCondorJobRawData($totalFiles, "$Init{'RESULTS_PATH'}/$date/");
+}
 print "Jobs are submitted on the cluster: $clusterID\n";
 
 sub GetReadyOrRemove;
+$numberOfRemovedJobs = GetReadyOrRemove($clusterID);
+
+sub CleanDir;
+CleanDir($mode);
+
 sub CompileReport;
+
+sub CompileReportRawData;
+
 sub SendReport;
 
-$numberOfRemovedJobs = GetReadyOrRemove($clusterID);
-my $reportStr = CompileReport;
-SendReport($reportStr);
+if($mode == 1){
+    my $reportStrRoot  = CompileReport;
+    SendReport($reportStrRoot);
+}else{
+    my $reportStrRaw = CompileReportRawData;
+    SendReport($reportStrRaw);
+}
+
+
 
 close(STDOUT);
 
@@ -200,6 +292,84 @@ sub GetReadyOrRemove{
 	}
 	return $numberOfRemovedJobs;
 }
+sub CompileReportRawData {
+	print "|------------------------------|\n";
+	print "| Preparing and sending report |\n";
+	print "|------------------------------|\n";
+
+	# Get time stamp string of the processing end
+	$dateEnd = GetDateString();
+
+       	do "Framework/xmlStatistics.pl";
+	# Prepare statistics from this execution unit (run.pl)
+	my $stat = CreateStat('run.pl');
+	#print "Total file $totalFiles \n";
+	#print "Number of removed jobs $numberOfRemovedJobs \n";
+	$completed = $totalFiles - numberOfRemovedJobs;
+	AddValue($stat, {'name'=>'Total submitted', 'digest'=>'copy', 'content'=>$totalFiles});
+        #AddValue($stat, {'name'=>'Completed normally', 'digest'=>'copy', 'content'=>$completed});
+	AddValue($stat, {'name'=>'Killed/time out', 'digest'=>'sum', 'content'=>$numberOfRemovedJobs});
+
+	AddValue($stat, {'name'=>'Initial command line', 'digest'=>'copy', 'content'=>$argsString});
+	AddValue($stat, {'name'=>'Processing start', 'digest'=>'copy', 'content'=>$date});
+	AddValue($stat, {'name'=>'Processing end', 'digest'=>'copy', 'content'=>$dateEnd});
+
+	AddValue($stat, {'name'=>'Files in the directory matching template', 'digest'=>'sum', 'content'=>$totNum});
+
+	$statDir = "$Init{'RESULTS_PATH'}/$date/Logs/Stat";
+	print "statDir = $statDir\n";
+	WriteStat($stat, "$statDir/run.xml");
+	
+
+		# Merge all stat-files from all execution units:
+	# 	run.pl
+	# 	workerScript.pl
+	# 	physics analysis executables
+	# All stat-files are assumed to be in /Logs/Stat/ directory
+
+	$stat = EmptyStat();
+	my $reportShaperPresent = 0;
+
+	opendir STAT_DIR, "$statDir" or die "Cannot open directory $statDir : $!";
+	foreach my $name (readdir(STAT_DIR)) {
+		next if $name eq "." or $name eq "..";
+		next unless $name =~ /\.xml$/;
+		# Accumulate all except reportShaper.xml
+		$reportShaperPresent = 1 and next if $name eq "reportShaper.xml";
+		$statFile = $name;
+		print "Accumulating stat-file $statFile\n";
+		my $newStat = ReadStat("$statDir/$statFile");
+		$stat = AcquireStat($stat, $newStat);
+	}
+
+	# Calculate the status of the processing
+	my $filesToProcess = scalar(@fileList);
+
+#for raw data case, "PROBLEMS" is determined if there are 1 or more jobs removed
+	my $status = ($numberOfRemovedJobs == 0) ? 'GOOD' : 'PROBLEMS';
+	AddValue($stat, {'name'=>'Status', 'digest'=>'copy', 'content'=>$status});
+
+	if ($reportShaperPresent) {
+		$statFile = "reportShaper.xml";
+		print "Accumulating report shaper file $statFile\n";
+		my $shaper = ReadStat("$statDir/$statFile");
+		$stat = AcquireStat($shaper, $stat);
+	}
+	closedir STAT_DIR;
+
+	# Sort all values according to their 'order' in ascending order
+	# If order is not defined value will appear after those with defined order
+	# Special comparison criteria is used to do this
+	@{$stat->{'val'}} = sort {my $defa = defined $a->{'order'}; my $defb = defined $b->{'order'}; ($defa and $defb)? $a->{'order'} <=> $b->{'order'}: $defb <=> $defa} @{$stat->{'val'}};
+
+	WriteStat($stat, "$statDir/digest.xml");
+
+	# Create text file based on digest.xml stat-file
+	sub StatReport;
+	$report = StatReport($stat);
+	return $report;
+
+}
 
 # Write stat from this file, accumulate with other, compile report from digest.xml
 sub CompileReport {
@@ -217,9 +387,9 @@ sub CompileReport {
 	AddValue($stat, {'name'=>'Total Root files to process', 'digest'=>'sum', 'content'=>scalar(@fileList)});
 	# During the stat digestion job*.xml will subtract Processed successfully from this value
 	AddValue($stat, {'name'=>'Not processed/condor section failure', 'digest'=>'sum', 'content'=>scalar(@fileList)});
-
+	
 	AddValue($stat, {'name'=>'Total submitted', 'digest'=>'copy', 'content'=>$totalFiles});
-        #AddValue($stat, {'name'=>'Completed normally', 'digest'=>'sum', 'content'=>$totalFiles - $numberOfRemovedJobs});
+        #AddValue($stat, {'name'=>'Completed normally', 'digest'=>'sum', 'content'=> $totalFiles - $numberOfRemovedJobs});
 	AddValue($stat, {'name'=>'Killed/time out', 'digest'=>'sum', 'content'=>$numberOfRemovedJobs});
 
 	AddValue($stat, {'name'=>'Initial command line', 'digest'=>'copy', 'content'=>$argsString});
@@ -308,15 +478,6 @@ sub SendReport {
 	$subject = "ARA processing results on $date";
 	send_mail($subject, $reportFile, $Init{'EMAILS'});
 	
-
-        #removing files unwanted files sent back by condor
-	$fileToDelete= `ls -1 UserCode/ | awk '{ ORS=" "; print; }' `;
-	print $fileToDelete . "\n";
-	`rm $fileToDelete`;
-	`rm myL2vrtx_compile*`;
-	`rm GridVtx*`;
-	`rm zout.txt`;
-	`rm archive.tar.gz`;
         
 	print "|---------------------------|\n";
 	print "|           Done!           |\n";
@@ -352,6 +513,33 @@ sub CreateIfNotExist {
 sub GetShortRecord {
 	my $value = @_[0];
 	return "$value->{'name'}:\t$value->{'content'}";
+}
+
+sub CleanDir {
+    my $myMode = @_[0];
+        #removing unwanted files sent back by condor
+#    print "$myMode \n";
+    if($myMode == 1){
+	$fileToDelete= `ls -1 UserCode/RootExe/ | awk '{ ORS=" "; print; }' `;
+	`rm $fileToDelete`;
+    }
+ #   print "in clean dir \n";
+    if($myMode == 2){
+#	print "in mode 2 \n";
+	$fileToDelete= `ls -1 UserCode/RawExe/ | awk '{ ORS=" "; print; }' `;
+	`rm current`;
+	`rm log.txt`;
+	`rm temp1.txt`;
+	`rm temp2.txt`;
+	`rm $fileToDelete`;
+    }
+	print $fileToDelete . "\n";
+
+    
+#	`rm myL2vrtx_compile*`;
+#	`rm GridVtx*`;
+#	`rm zout.txt`;
+	`rm archive.tar.gz`;
 }
 
 # Return format:   NAME:\tVALUE\t( attr: val ... )

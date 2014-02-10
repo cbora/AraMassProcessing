@@ -9,13 +9,21 @@ our @EXPORT = qw(%init);
 # This script contains configuration constants
 # that will be loaded at the beginning
 
+
+#this can process raw data and root files
+#for raw data => 'raw'
+#for root files => 'root'
+$DEFAULT_MODE="raw";
+$init{'MODE'}=$DEFAULT_MODE;
+
 # default path to the directory with input L0 data (only absolute path)
 #$DEFAULT_DATA_PATH = "/data/exp/ARA/2011/filtered/L0/"; # for 2011 L0data files
 $DEFAULT_DATA_PATH = "/data/exp/ARA/2012/filtered/L0/"; #for 2012 L0 data files
 $init{'DATA_PATH'} = $DEFAULT_DATA_PATH;
 
 # default results path (relative part is allowed)
-$DEFAULT_RESULTS_PATH = "./Data/";
+#$DEFAULT_RESULTS_PATH = "./Data/";
+$DEFAULT_RESULTS_PATH = "/net/user/cbora/";
 $init{'RESULTS_PATH'} = $DEFAULT_RESULTS_PATH;
 
 # default maximum input file to run in one condor-job
@@ -23,7 +31,7 @@ $DEFAULT_FILE_LIMIT = 20;
 $init{'FILE_LIMIT'} = $DEFAULT_FILE_LIMIT;
 
 # default number of waiting periods for condor to complete
-$init{'MAX_TRIES'} = 1440; # 24 hours
+$init{'MAX_TRIES'} = 10080000000; #1440; # 24 hours
 
 # default time length between checking condor tries in sec.
 $init{'TRY_LENGTH'} = 60;	# 1 min
@@ -36,4 +44,6 @@ $init{'EMAILS'} = $DEFAULT_EMAILS;
 
 # default template for searching data-files
 #$init{'TEMPLATE'} = '*.root';
-$init{'TEMPLATE'} = '*.TestBed.L1.root'; #template for 2012 L1 data files 
+#$init{'TEMPLATE'} = '*.TestBed.L1.root'; #template for 2012 L1 data files 
+#$init{'TEMPLATE'} = "*.dat";
+$init{'TEMPLATE'} ="*.root";

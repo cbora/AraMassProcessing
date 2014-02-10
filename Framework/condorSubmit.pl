@@ -19,7 +19,7 @@ sub SubmitCondorJob{
 
 
 	#make an archive for the files in the UserCode directory
-	`tar -zcf archive.tar.gz -C UserCode/ .`;
+	`tar -zcf archive.tar.gz -C UserCode/RootExe/ .`;
        
 	my $submitFile = "Framework/parallelJobs.condor";
 	my $submitCommand = "condor_submit ".
@@ -40,7 +40,34 @@ sub SubmitCondorJob{
 	chomp($clusterId);
 	return $clusterId;
 }
+sub SubmitCondorJobRawData{
+	my $n = @_[0];
+	my $dataPath = @_[1];
+	print "n = $n, dataPath = $dataPath\n";
 
+	#make an archive for the files in the UserCode directory
+	`tar -zcf archive.tar.gz -C UserCode/RawExe/ .`;
+#	print " in raw dataa submit file \n";
+
+	my $submitFile = "Framework/parallelJobsRawData.condor";
+	my $submitCommand = "condor_submit ".
+		"-append 'log        = $dataPath/Logs/System/log.\$(Process)' ".
+		"-append 'output     = $dataPath/Logs/System/out.\$(Process)' ".
+		"-append 'error      = $dataPath/Logs/System/err.\$(Process)' ".
+		"-append 'transfer_input_files = $dataPath/Input/job\$(Process).txt, Framework/xmlStatistics.pl, Framework/rootlogon.C, archive.tar.gz' ".
+		"-append 'arguments = \$(Process) $dataPath/' ".
+		"-append 'queue $n' $submitFile";
+
+	#print "$submitCommand\n";
+	#$cmd= `pwd`;
+	#$cmd1 = "cd $thisJobDir";
+	#$cmd2 = "condor_submit parallelJobs.condor";
+	my $getClusterID = "tail -1 | awk -F \"cluster \" \'{print \$2}\'";
+	my $clusterId = `$submitCommand | $getClusterID`;
+	print "clusterId = $clusterId\n";
+	chomp($clusterId);
+	return $clusterId;
+}
 #use Data::Dumper;
 
 sub WaitForCondor{
