@@ -1,0 +1,27 @@
+<stat>
+	<!-- This file should present in the directory where all stat-xml are stored (Logs/Stat/) -->
+	<!-- This file will be digested at the end of digestion chain, but as the first stat-file -->
+	<!-- Thus copying all additional values aruments -->
+	<!-- 'order' should propogate through to the final version of stat-xml -->
+	<!-- 'name's of the values should match those coming from run.pl, workerScript.pl etc. -->
+	<!-- In the text-report the values will appear in the same order as here, and then additional-->
+	<!-- All lines will be preceded by a tab except those which order%100==0 (section names) -->
+	<!-- The number of empty lines in text-report equals to order2/100-order1/100 (int devision) -->
+	<!-- Additional digest type is introduced: 'join', it joins all unique arguments -->
+	<!-- but gives a priority to the second file in case of conflict -->
+
+	<val name="Status" order="100" digest="join">Good</val>
+
+	<val name="Condor jobs processing summary" order="200" digest="join"></val>
+	<val name="Total submitted" order="201" digest="join">0</val>
+	<val name="Completed normally" order="202" digest="join">0</val>
+	<val name="Killed/time out" order="203" digest="join">0</val>
+
+	<val name="Global stat/info" order="300" digest="join"></val>
+	<val name="Initial command line" order="301" digest="join"></val>
+	<val name="Processing start" order="302" digest="join"></val>
+	<val name="Processing end" order="303" digest="join"></val>
+	
+
+	<val name="Miscellaneous" order="500" digest="join"></val>
+</stat>
