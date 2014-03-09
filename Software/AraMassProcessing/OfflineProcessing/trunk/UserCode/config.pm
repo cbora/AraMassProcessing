@@ -9,11 +9,17 @@ our @EXPORT = qw(%init);
 # This script contains configuration constants
 # that will be loaded at the beginning
 
+#MAX EXECUTION TIME PER SECTION
+#12 hours (default) => short
+#24 hours => long (this has fewer slots available for the jobs submitted)
+$DEFAULT_EXECUTION_TIME="short";
+$init{'EXECUTION_TIME'} = $DEFAULT_EXECUTION_TIME;
+
 
 #this can process raw data and root files
 #for raw data => 'raw'
 #for root files => 'root'
-$DEFAULT_MODE="raw";
+$DEFAULT_MODE="root";
 $init{'MODE'}=$DEFAULT_MODE;
 
 # default path to the directory with input L0 data (only absolute path)
@@ -23,7 +29,8 @@ $init{'DATA_PATH'} = $DEFAULT_DATA_PATH;
 
 # default results path (relative part is allowed)
 #$DEFAULT_RESULTS_PATH = "./Data/";
-$DEFAULT_RESULTS_PATH = "/net/user/cbora/";
+#$DEFAULT_RESULTS_PATH = "/net/user/cbora/";
+$DEFAULT_RESUTLS_PATH ="Data/";
 $init{'RESULTS_PATH'} = $DEFAULT_RESULTS_PATH;
 
 # default maximum input file to run in one condor-job
