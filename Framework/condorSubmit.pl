@@ -15,13 +15,18 @@ sub checkCondorJob;
 sub SubmitCondorJob{
 	my $n = @_[0];
 	my $dataPath = @_[1];
+	#my $executionTime = @_[2];
+	    
 	print "n = $n, dataPath = $dataPath\n";
-
+#	print "$executionTime \n";
 
 	#make an archive for the files in the UserCode directory
 	`tar -zcf archive.tar.gz -C UserCode/RootExe/ .`;
        
 	my $submitFile = "Framework/parallelJobs.condor";
+	
+
+#	print "CONDOR SHORT execution time \n";
 	my $submitCommand = "condor_submit ".
 		"-append 'log        = $dataPath/Logs/System/log.\$(Process)' ".
 		"-append 'output     = $dataPath/Logs/System/out.\$(Process)' ".
@@ -40,6 +45,41 @@ sub SubmitCondorJob{
 	chomp($clusterId);
 	return $clusterId;
 }
+sub SubmitCondorJobLong{
+    #this function is for submitting condor job to execute to a maximum of 24 hours
+    #because the default execution time is 12hours
+    
+
+    my $n = @_[0];
+    my $dataPath = @_[1];
+    #my $executionTime = @_[2];
+    my $username =`whoami`;	    
+    print "n = $n, dataPath = $dataPath\n";
+
+
+	#make an archive for the files in the UserCode directory
+    `tar -zcf archive.tar.gz -C UserCode/RootExe/ .`;
+       
+    my $submitFile = "Framework/parallelJobs.condor";
+
+
+ #   print "CONDOR LONG execution time \n";
+    my $submitCommand = "condor_submit ".
+		"-append 'log        = $dataPath/Logs/System/log.\$(Process)' ".
+		"-append 'output     = $dataPath/Logs/System/out.\$(Process)' ".
+		"-append 'error      = $dataPath/Logs/System/err.\$(Process)' ".
+		"-append 'transfer_input_files = $dataPath/Input/job\$(Process).txt, Framework/xmlStatistics.pl, Framework/loadlib.h, Framework/vtxgrid.h, Framework/vtxlib.h, Framework/vtxlibvars.h, Framework/vtxutil.h, Framework/rootlogon.C, archive.tar.gz' ".
+		"-append 'arguments = \$(Process) $dataPath/' ".
+		"-append '\+AccountingGroup = \"long.`whoami`\"' ".
+		"-append 'queue $n' $submitFile";
+
+    my $getClusterID = "tail -1 | awk -F \"cluster \" \'{print \$2}\'";
+    my $clusterId = `$submitCommand | $getClusterID`;
+    print "clusterId = $clusterId\n";
+    chomp($clusterId);
+    return $clusterId;
+}
+
 sub SubmitCondorJobRawData{
 	my $n = @_[0];
 	my $dataPath = @_[1];

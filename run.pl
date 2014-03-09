@@ -246,8 +246,24 @@ print "|-----------------------------|\n";
 do 'Framework/condorSubmit.pl';
 my $clusterID;
 if($mode == 1){
+if($Init{'EXECUTION_TIME'} eq "long"){
 #print Dumper({%Init});
+#print " LONG execution time \n";
+
+print "|-----------------------------|\n";
+print "|  24 hours max excution time |\n";
+print "|          Per job            |\n";
+print "|-----------------------------|\n";
+
+$clusterID = SubmitCondorJobLong($totalFiles, "$Init{'RESULTS_PATH'}/$date/");
+}else {
+#print "SHORT execution time \n";
+print "|-----------------------------|\n";
+print "|  12 hours max excution time |\n";
+print "|          Per job            |\n";
+print "|-----------------------------|\n";
 $clusterID = SubmitCondorJob($totalFiles, "$Init{'RESULTS_PATH'}/$date/");
+}
 }else{
 $clusterID = SubmitCondorJobRawData($totalFiles, "$Init{'RESULTS_PATH'}/$date/");
 }
