@@ -26,7 +26,7 @@ sub SubmitCondorJob{
 	my $submitFile = "Framework/parallelJobs.condor";
 	
 
-#	print "CONDOR SHORT execution time \n";
+	print "CONDOR SHORT execution time \n";
 	my $submitCommand = "condor_submit ".
 		"-append 'log        = $dataPath/Logs/System/log.\$(Process)' ".
 		"-append 'output     = $dataPath/Logs/System/out.\$(Process)' ".
@@ -56,21 +56,31 @@ sub SubmitCondorJobLong{
     my $username =`whoami`;	    
     print "n = $n, dataPath = $dataPath\n";
 
+    print "username: $username \n";
 
+    #generating string for AccountingGroup varibale
+    
+    my $userString = "long.".$username;
+    print "userString is : $userString \n";
+    chomp($userString);
+    $userString = "\"".$userString."\"";
+    print "New userString : $userString \n";
+
+#		"-append '\+AccountingGroup = \"long.\$(username)\"' ".
 	#make an archive for the files in the UserCode directory
     `tar -zcf archive.tar.gz -C UserCode/RootExe/ .`;
        
     my $submitFile = "Framework/parallelJobs.condor";
 
 
- #   print "CONDOR LONG execution time \n";
+    print "CONDOR LONG execution time \n";
     my $submitCommand = "condor_submit ".
 		"-append 'log        = $dataPath/Logs/System/log.\$(Process)' ".
 		"-append 'output     = $dataPath/Logs/System/out.\$(Process)' ".
 		"-append 'error      = $dataPath/Logs/System/err.\$(Process)' ".
 		"-append 'transfer_input_files = $dataPath/Input/job\$(Process).txt, Framework/xmlStatistics.pl, Framework/loadlib.h, Framework/vtxgrid.h, Framework/vtxlib.h, Framework/vtxlibvars.h, Framework/vtxutil.h, Framework/rootlogon.C, archive.tar.gz' ".
 		"-append 'arguments = \$(Process) $dataPath/' ".
-		"-append '\+AccountingGroup = \"long.`whoami`\"' ".
+		"-append '\+AccountingGroup = $userString' ".
 		"-append 'queue $n' $submitFile";
 
     my $getClusterID = "tail -1 | awk -F \"cluster \" \'{print \$2}\'";
