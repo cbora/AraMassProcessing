@@ -56,17 +56,14 @@ sub SubmitCondorJobLong{
     my $username =`whoami`;	    
     print "n = $n, dataPath = $dataPath\n";
 
-    print "username: $username \n";
+ #   print "username: $username \n";
 
     #generating string for AccountingGroup varibale
-    
     my $userString = "long.".$username;
-    print "userString is : $userString \n";
     chomp($userString);
     $userString = "\"".$userString."\"";
-    print "New userString : $userString \n";
+  #  print "New userString : $userString \n";
 
-#		"-append '\+AccountingGroup = \"long.\$(username)\"' ".
 	#make an archive for the files in the UserCode directory
     `tar -zcf archive.tar.gz -C UserCode/RootExe/ .`;
        
