@@ -1,0 +1,35 @@
+#!/usr/bin/perl
+
+
+#$dire = "./Temp/";
+$dire = "/home/cbora/dev/AraSim/Framework/Temp";
+
+#print "$dire \n";
+
+open DIR, $dire or die $!;
+
+#while( my $entry = readdir DIR) {
+#    next if($entry =~ /^\.\.?$/);
+#    closedir DIR;
+    
+#    print "dir is not empty \n";
+ #   return 0;
+#}
+
+#closedir DIR;
+
+#print "is empty \n";
+#return 1;
+
+
+#opendir(DIR,'directory') or die "$!";
+print "readdir DIR;  \n";# reads .
+readdir DIR; # reads ..
+if (readdir DIR) { #now there should be a file or folder
+    print "it's not empty";
+}
+else {
+    print "it is empty";
+}
+close DIR;
+    
