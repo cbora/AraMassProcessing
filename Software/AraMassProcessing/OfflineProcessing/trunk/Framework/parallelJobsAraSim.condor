@@ -1,0 +1,28 @@
+# Submit n jobs to Condor cluster. 
+# workerJob.sh sets environment and execute RootScript.C for each file from job*.txt
+executable = Framework/workerScriptAraSim.pl
+universe   = vanilla
+
+# This line will be substituted in condorSubmit.pl
+log        = Data/log.$(Process)
+# This line will be substituted in condorSubmit.pl
+output     = Data/out.$(Process)
+# This line will be substituted in condorSubmit.pl
+error      = Data/err.$(Process)
+
+ImageSize = 1024
+# Each job gets one job*.txt with list of files to process
+# This line will be substituted in condorSubmit.pl
+transfer_input_files = job$(Process).txt, Framework/xmlStatistics.pl, Framework/rootlogon.C, Framework/loadlib.h, Framework/vtxgrid.h, Framework/vtxlib.h, Framework/vtxlibvars.h, Framework/vtxutil.h, archive.tar.gz
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+
+# To prevent from seding email about completion of each section
+notification = Never
+getenv = TRUE
+
+#arguments = $(Process) /home/savdeev/Condor/Data/
+# The number of queued jobs should be variable
+# This line will be substituted in condorSubmit.pl
+queue 1
+
