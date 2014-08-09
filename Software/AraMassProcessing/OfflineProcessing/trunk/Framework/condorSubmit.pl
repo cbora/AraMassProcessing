@@ -12,7 +12,11 @@
 #print "\n";
 sub checkCondorJob;
 
+# There are a bunch of different functions to submit jobs on condor
+# I prefered this instead of many if statement cause it makes debugging easier
+
 sub SubmitCondorJob{
+    #Function to submit Root file mode jobs on condor - 12 hours max per section
 	my $n = @_[0];
 	my $dataPath = @_[1];
 	#my $executionTime = @_[2];
@@ -45,6 +49,7 @@ sub SubmitCondorJob{
 	chomp($clusterId);
 	return $clusterId;
 }
+
 sub SubmitCondorJobLong{
     #this function is for submitting condor job to execute to a maximum of 24 hours
     #because the default execution time is 12hours
@@ -56,14 +61,17 @@ sub SubmitCondorJobLong{
     my $username =`whoami`;	    
     print "n = $n, dataPath = $dataPath\n";
 
- #   print "username: $username \n";
+    print "username: $username \n";
 
     #generating string for AccountingGroup varibale
+    
     my $userString = "long.".$username;
+    print "userString is : $userString \n";
     chomp($userString);
     $userString = "\"".$userString."\"";
-  #  print "New userString : $userString \n";
+    print "New userString : $userString \n";
 
+#		"-append '\+AccountingGroup = \"long.\$(username)\"' ".
 	#make an archive for the files in the UserCode directory
     `tar -zcf archive.tar.gz -C UserCode/RootExe/ .`;
        
@@ -88,6 +96,7 @@ sub SubmitCondorJobLong{
 }
 
 sub SubmitCondorJobRawData{
+    #Funtion to submit Raw data jobs on condor
 	my $n = @_[0];
 	my $dataPath = @_[1];
 	print "n = $n, dataPath = $dataPath\n";
@@ -116,6 +125,77 @@ sub SubmitCondorJobRawData{
 	return $clusterId;
 }
 #use Data::Dumper;
+
+sub SubmitCondorJobAraSim{
+    #Function to submit ARASIM jobs on condor
+    my $n = @_[0];
+    my $dataPath = @_[1];
+#    my $level = @_[2];
+    my $level = 0; #we dont care about the level of merging when running arasim
+    my $flag = 0; # to tell workerscript that it should run arasim
+    
+
+    print "n = $n, dataPath = $dataPath\n";
+
+    $logFile ="/Logs/System/logAraSim_";
+    $errFile ="/Logs/System/errAraSim_";
+    $outFile ="/Logs/System/outAraSim_";
+
+#        `cd ./Temp/`;
+    my $submitFile = "Framework/parallelJobsAraSim.condor";
+        my $submitCommand = "condor_submit ".
+                "-append 'log        = $dataPath/$logFile.\$(Process)' ".
+                "-append 'output     = $dataPath/$outFile.\$(Process)' ".
+                "-append 'error      = $dataPath/$errFile.\$(Process)' ".
+                "-append 'transfer_input_files = Framework/runAraSim.sh, UserCode/AraSimExe/mergeTree.C, archive.tar.gz' ".
+                "-append 'arguments = $dataPath \$(Process) $level $flag' ".
+                "-append 'getEnv = TRUE' ".
+                "-append 'queue $n' $submitFile";
+
+    my $getClusterID = "tail -1 | awk -F \"cluster \" \'{print \$2}\'";
+    my $clusterId = `$submitCommand | $getClusterID`;
+    print "clusterId = $clusterId\n";
+    chomp($clusterId);
+
+    return $clusterId;
+
+}
+
+sub SubmitCondorJobMerge{
+    #Function to submit merge jobs in the mode of ARASIM
+    my $n = @_[0];
+    my $dataPath = @_[1];
+    my $level = @_[2];
+    my $flag = 1; # to tell workerscript that it should run merger
+
+
+
+    print "n = $n, dataPath = $dataPath\n";
+    $dataPathInput = "$dataPath/Input/";
+    $inFile = "inputFile_".$level."_";
+    $dataPathLog = "$dataPath/Logs/System/merge_";
+    $logFile ="log_".$level . "_";
+    $errFile ="err_".$level . "_";
+    $outFile ="out_".$level . "_";
+
+    my $submitFile = "Framework/parallelJobsAraSim.condor";
+        my $submitCommand = "condor_submit ".
+                "-append 'log        = $dataPathLog$logFile.\$(Process)' ".
+                "-append 'output     = $dataPathLog$outFile.\$(Process)' ".
+                "-append 'error      = $dataPathLog$errFile.\$(Process)' ".
+                "-append 'transfer_input_files = $dataPathInput/$inFile\$(Process).txt, UserCode/AraSimExe/mergeTree.C, Framework/runAraSimMerger.sh' ".
+                "-append 'arguments = $dataPath \$(Process) $level $flag $dataPathInput/$inFile\$(Process).txt' ".
+                "-append 'getEnv = TRUE' ".
+                "-append 'queue $n' $submitFile";
+
+    my $getClusterID = "tail -1 | awk -F \"cluster \" \'{print \$2}\'";
+    my $clusterId = `$submitCommand | $getClusterID`;
+    print "clusterId = $clusterId\n";
+    chomp($clusterId);
+    return $clusterId;
+}
+
+
 
 sub WaitForCondor{
 	my $cluster = @_[0];#SubmitCondorJob($n);

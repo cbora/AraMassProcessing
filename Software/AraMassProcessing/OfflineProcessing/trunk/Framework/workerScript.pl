@@ -129,7 +129,7 @@ while (<TASK>) {
 
         #generating path for non root files
 	$outPath=$arg2 . "Results/NonRootOutput/";
-	$iIndex=index($newFileName, "un");
+	$iIndex=index($newFileName, "nt");
 	$iIndex= $iIndex + 2;
 	$newString= substr($newFileName, $iIndex, 6);
 	$newString = "Run" . $newString;
