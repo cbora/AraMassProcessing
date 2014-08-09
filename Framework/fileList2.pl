@@ -11,7 +11,13 @@ sub FindFiles {
     my $rootFileExtension = @_[1];#"*.root";                                                                                                                                               
     my $from = @_[2];
     my $to = @_[3];
- 
+    
+    print "............................... \n";
+    print "$directoryPath .. \n";
+    print "$rootFileExtension .. \n";
+    print "$from .. \n";
+    print "$to .. \n";
+
     my $oneLineFindResults = `find $directoryPath -name \"$rootFileExtension\"`;
 
     my @findResults = split /\n/, $oneLineFindResults;
@@ -85,6 +91,8 @@ for my $full (@findResults) {
 sub PrintFileListToFile {
         my @list = @{@_[0]};
         my $fileName = ${@_[1]};
+	print "$fileName ... \n";
+	print "@list ... \n";
         open(FILE, ">$fileName") or die "Cannot open file $fileName : $!\n";
         for my $line (@list) {
                 #print "$line\n";

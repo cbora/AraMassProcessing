@@ -14,8 +14,8 @@ sub SeparateTasks{
 	my $outputPath = @_[1];
 	my $limit = @_[2];	# The limit of number of files to be sent to one worker node
 	print "Separating jobs for condor...\n";
-#	print "Input list file  : $input\n";
-#	print "Output file path : $outputPath\n";
+	print "Input list file  : $input\n";
+	print "Output file path : $outputPath\n";
 
 	$counter = 0;
 	$prefix = "$outputPath/job"; # New list will be like "job0.txt"

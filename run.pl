@@ -2,6 +2,7 @@
 
 #use strict;
 use lib 'UserCode';   #To make compiler aware about config.pm location in Framework/ directory
+
 use config;
 use Data::Dumper;
 use Tie::File;
@@ -27,7 +28,7 @@ sub PrintHelp{
 		-to file name or path + file name  of the finishing file
 		-asyn asynchronous execution (user may logout after hitting enter)
 		-email user e-mail for sending report
-                -type \"root\" or \"raw\" 
+                -mode \"root\" or \"raw\" or \"arasim\"
 
 => Visit http://ara.physics.wisc.edu/wiki/index.php/Processing_System for further documentation \n";
 	#$switch = undef if $switch;
@@ -137,35 +138,163 @@ if ($Init{'ASYN'}){
 CreateIfNotExist("$resultsDir");
 
 
-
+#Variables from configuration file
 $dataType= $Init{'MODE'};
+$dataPath = $Init{'DATA_PATH'};
+$resultPath = $Init{'RESULTS_PATH'};
+$template = $Init{'TEMPLATE'}; 
+$from = $Init{'FROM'};
+$to = $Init{'TO'};
+$sizeLimit = $Init{'SIZE_LIMIT'};
+$araSimPath = $Init{'ARASIM_DIR'};
+$executionTime = $Init{'EXECUTION_TIME'};
+$fileLimit = $Init{'FILE_LIMIT'};
+$araSimSectionNumber = $Init{'NUMBER_SECTION'};
+
+
+print "arasim $araSimPath \n";
+#Make ready all necessary files
+do "Framework/condorSubmit.pl";
+do "Framework/functionToPrint.pl";
+
+
+do "Framework/araSimMode.pl";
+#do "Framework/araSimOutputSearch.pl";
+do "Framework/araSimOutputFileSearch.pl";
+#Variables used by all modes
 my $mode;
+my $clusterID;
+my $numberOfRemovedJobs;
+my $reportStrRoot;
+my $reportStrRaw;
+
+
 if(($dataType eq "root")||($dataType eq "Root")||($dataType eq "ROOT")){
+
+    #Root mode
     print `cp -r Framework/DirStructure/* $resultsDir/`;
     print "Dublicate STDOUT to the file $mainLog\n";
     open(STDOUT, "| tee -ai $mainLog") or die "Cannot tee to $mainLog : $!";
     
+    sleep 0.5;
     print "|-----------------------------|\n";
     print "| MODE : Root files           |\n";
     print "|-----------------------------|\n";
 
-    print "\n";
-#mode = 1 for root files
-    $mode=1; 
+    print "\n";   
+    $mode  = 1;
+
+    do "Framework/rootMode.pl";
+    do "Framework/loadBalance.pl";
+    do "Framework/fileList2.pl";
+    ($clusterID) = startRootMode($template, $dataPath, $from, $to, $resultPath, $date, $fileLimit);
+    
+    print "Jobs are submitted on the cluster: $clusterID \n";
+
+    sub GetReadyOrRemove;
+    $numberOfRemovedJobs = GetReadyOrRemove($clusterID);
+
+    CleanDir($mode);
+
+    sub CompileReport;
+    $reportStrRoot  = CompileReport;
+    
+    SendReport($reportStrRoot);
+
 }
 elsif(($dataType eq "raw")||($dataType eq "Raw")||($dataType eq "RAW")) {
+    
+    #RRaw data mode
     print `cp -r Framework/DirStructureRawData/* $resultsDir/`;
     print "Dublicate STDOUT to the file $mainLog\n";
     open(STDOUT, "| tee -ai $mainLog") or die "Cannot tee to $mainLog : $!";
+
+
+    sleep 0.5;
     print "|-----------------------------|\n";
     print "| MODE : Raw data             |\n";
     print "|-----------------------------|\n";
+ 
+    print "\n";
+    $mode=2; 
+
+    do "Framework/rawMode.pl";
+    do "Framework/loadBalanceRawData.pl";
+    do "Framework/fileListRawData.pl";
+    $clusterID = starRawMode($template, $dataPath, $from, $to, $resultPath, $date, $fileLimit);
+    print "Jobs are submitted on the cluster: $clusterID\n";
+
+    sub GetReadyOrRemove;
+    $numberOfRemovedJobs = GetReadyOrRemove($clusterID);
+    
+    CleanDir($mode);
+
+    sub CompileReportRawData;
+    $reportStrRaw = CompileReportRawData;
+    SendReport($reportStrRaw);
+
+
+}elsif(($dataType eq "arasim")||($dataType eq "AraSim")||($dataType eq "ARASIM")||($dataType eq "araSim")) {
+    
+    #AraSim Mode
+    print `cp -r Framework/DirStructureAraSim/* $resultsDir/`;
+    print "Dublicate STDOUT to the file $mainLog\n";
+    open(STDOUT, "| tee -ai $mainLog") or die "Cannot tee to $mainLog : $!";
+
+    sleep 0.5;
+
+    print "|-----------------------------|\n";
+    print "| MODE : AraSim               |\n";
+    print "|-----------------------------|\n";
     
     print "\n";
-#mode =2 for raw files
-     $mode=2; 
+    $mode = 3;
+   
+    sub runAraSim;
+    sub getFileList;
+
+    araSimDirExist($araSimPath);
+    ($clusterID) = runAraSim($resultsDir, $araSimPath, $date, $araSimSectionNumber);
+    print "Jobs are submitted on the cluster: $clusterID\n";
+
+    sub GetReadyOrRemove;
+    $numberOfRemovedJobs = GetReadyOrRemove($clusterID);
+    print "Normal termination \n";
+
+    $sizeLimit = convertGBtoBytes($sizeLimit);
+    
+    $isEmpty = isEmptyDir($resultsDir);
+    
+    my $status;
+    
+    my $reportName;
+    my $level;
+    if ( $isEmpty == 1){
+	$status = "PROBLEMS";
+	$dateEnd = GetDateString();
+	($reportName) = writeAraSimReport($resultsDir, $araSimSectionNumber, 0, 0, 0, $argsString, $date, $dateEnd, $status);
+	printFailure();
+    }else {
+	if($numberOfRemovedJob < 1){
+	    $status = "GOOD";
+	}else {
+	    $status = "PROBLEMS";
+	}
+	($level) = doMerge($resultsDir, $date, $sizeLimit);
+	
+	($nFiles, $dirSize) = organizeAraSimOutput($resultsDir, ($level - 1));
+
+
+	$dateEnd = GetDateString();
+        ($reportName) = writeAraSimReport($resultsDir, $araSimSectionNumber, $dirSize, $nFiles, 500, $argsString, $date, $dateEnd, $status);
+    }
+
+    SendReportTxt($reportName);
+    CleanDir($mode);
+
+
 }else {
-    print `cp -r Framework/DirStructureRawData/* $resultsDir/`;
+    print `cp -r Framework/DirStructureAraSim/* $resultsDir/`;
     print "Dublicate STDOUT to the file $mainLog\n";
     open(STDOUT, "| tee -ai $mainLog") or die "Cannot tee to $mainLog : $!";
     print "|-----------------------------|\n";
@@ -175,119 +304,8 @@ elsif(($dataType eq "raw")||($dataType eq "Raw")||($dataType eq "RAW")) {
     print "|-----------------------------|\n";
     exit(0);
 }
-	
-      
-#print "mode is $mode \n";
-#exit(0);
-print "|-----------------------------|\n";
-print "| Collecting files to process |\n";
-print "|-----------------------------|\n";
 
-$template = $Init{'TEMPLATE'};#"*.TestBed.L0.root";
-#print "$Init{'DATA_PATH'} \n";
-#print "$Init{'FROM'} \n";
-#print "$Init{'TO'} \n";
-#print "$template \n";
-
-
-#print "data Type" . $dataType . "\n";
-my $pList;
-my $pNumber;
-if($mode == 1){
-    do "Framework/fileList2.pl";
-    ($pList, $pNumber) = FindFiles($Init{'DATA_PATH'}, $template, $Init{'FROM'}, $Init{'TO'});
- #   print "in root data type \n";
-}else{
-    do "Framework/fileListRawData.pl";
-#Get template of files to process
-  #  print "in raw data type \n";
-
-    ($top, $bottom) = GetFromToFullPath($Init{'DATA_PATH'}, $Init{'FROM'}, $Init{'TO'}, $template);   #this added for raw data
-    ($pList, $pNumber) = FindFiles($Init{'DATA_PATH'}, $template, $top, $bottom);    #changed for raw data
-#($pList, $pNumber) = FindFiles($Init{'DATA_PATH'}, $template, $Init{'FROM'}, $Init{'TO'});    #changed for raw data
-}
-@fileList = @{$pList};
-$totNum = ${$pNumber};
-print "Files matching template \"$template\" : $totNum\n";
-print "Files satisfying the from-to criteria: " . scalar(@fileList) . "\n";
-#print "@fileList\n totNum = $totNum\n";
-#exit 1;
-#exit 0;
-if (scalar(@fileList) == 0) {
-	print "|-----------------------------|\n";
-	print "| Nothing to do. Terminating  |\n";
-	print "|-----------------------------|\n";
-	close(STDOUT);
-	exit 0;
-}
-
-PrintFileListToFile(\@fileList, \"$Init{'RESULTS_PATH'}/$date/Input/L0filesToProcess.txt");
-
-
-print "|-----------------------------|\n";
-print "| Creating separate job files |\n";
-print "|-----------------------------|\n";
-
-my $totalFiles;
-if($mode == 1){
-do "Framework/loadBalance.pl";
-$totalFiles = SeparateTasks("$Init{'RESULTS_PATH'}/$date/Input/L0filesToProcess.txt", "$Init{'RESULTS_PATH'}/$date/Input", $Init{'FILE_LIMIT'});
-}else{
-do "Framework/loadBalanceRawData.pl";
-$totalFiles = SeparateTasks("$Init{'RESULTS_PATH'}/$date/Input/L0filesToProcess.txt", "$Init{'RESULTS_PATH'}/$date/Input/", $Init{'FILE_LIMIT'});
-}
-print "Total files = $totalFiles\n";
-#exit 0;
-#exit 1;   #for testing cbora
-print "|-----------------------------|\n";
-print "|  Submitting jobs to Condor  |\n";
-print "|-----------------------------|\n";
-
-do 'Framework/condorSubmit.pl';
-my $clusterID;
-if($mode == 1){
-if($Init{'EXECUTION_TIME'} eq "long"){
-#print Dumper({%Init});
-#print " LONG execution time \n";
-
-print "|-----------------------------|\n";
-print "|  24 hours max excution time |\n";
-print "|          Per job            |\n";
-print "|-----------------------------|\n";
-
-$clusterID = SubmitCondorJobLong($totalFiles, "$Init{'RESULTS_PATH'}/$date/");
-}else {
-#print "SHORT execution time \n";
-print "|-----------------------------|\n";
-print "|  12 hours max excution time |\n";
-print "|          Per job            |\n";
-print "|-----------------------------|\n";
-$clusterID = SubmitCondorJob($totalFiles, "$Init{'RESULTS_PATH'}/$date/");
-}
-}else{
-$clusterID = SubmitCondorJobRawData($totalFiles, "$Init{'RESULTS_PATH'}/$date/");
-}
-print "Jobs are submitted on the cluster: $clusterID\n";
-
-sub GetReadyOrRemove;
-$numberOfRemovedJobs = GetReadyOrRemove($clusterID);
-
-sub CleanDir;
-CleanDir($mode);
-
-sub CompileReport;
-
-sub CompileReportRawData;
-
-sub SendReport;
-
-if($mode == 1){
-    my $reportStrRoot  = CompileReport;
-    SendReport($reportStrRoot);
-}else{
-    my $reportStrRaw = CompileReportRawData;
-    SendReport($reportStrRaw);
-}
+#print "cluster id: ... $clusterID \n";
 
 
 
@@ -500,7 +518,19 @@ sub SendReport {
 	print "|---------------------------|\n";
 }
 
+sub SendReportTxt {
+    do "Framework/email.pm";
+    
+    my $report =@_[0];
+    $subject = "ARA processing results on $date";
+    send_mail($subject, $report, $Init{'EMAILS'});
+    
 
+    print "|---------------------------|\n";
+    print "|           Done!           |\n";
+    print "|---------------------------|\n";
+
+}
 # Check if chain of dirictories exist, if not the procedure creates them one-by-one
 sub CreateIfNotExist {
         my $path = @_[0];
