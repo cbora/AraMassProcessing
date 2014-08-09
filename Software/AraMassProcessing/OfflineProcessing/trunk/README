@@ -1,10 +1,16 @@
-*************************************************
-*       AraMassProcessing v3.0                  *
-*                                               *
-* Author: Christian Bora, Sergey Avdeev         *
-*                                               *
-* For help and support: borachristian@gmail.com *
-*************************************************
+***************************************************************************
+*									  *
+*									  *
+*									  *
+*                         AraMassProcessing v3.2                          *
+*                                                                         *
+*									  *
+*									  *
+*									  *
+*                   Author: Christian Bora, Sergey Avdeev                 *
+*                                                   	   		  *
+*              For help and support: borachristian@gmail.com              *
+***************************************************************************
 
 Welcome to the directory of Ara mass processing system
 wiki page: http://ara.physics.wisc.edu/wiki/index.php/Processing_System
@@ -14,13 +20,16 @@ OVERVIEW:
 
 - run.pl - Top script to start the the system (./run.pl -h for help)
 
-- setEnv_3.3.sh - for AraRoot version 3.3
-
-- setEnv_1.7.sh - for AraRoot version 1.7
-
-- setEnv_1.6.sh - for AraRoot version 1.6
-  (User is able to source own AraRoot setup script)
-
+Environment scripts
+	    - setEnv_3.3.sh - for AraRoot version 3.3
+	    
+	    - setEnv_1.7.sh - for AraRoot version 1.7
+	    
+	    - setEnv_1.6.sh - for AraRoot version 1.6
+	        (User is able to source own AraRoot setup script)
+  		
+	    - Even personal environment sripts should work
+	  
 - Framework/ directory contains all working codes: scripts and condor job file
 
 - UserCode/ directory to contain the user's analysis executable and necessary files used by user's analysis ( e.g. header files)
@@ -31,7 +40,7 @@ OVERVIEW:
     		     - Name the root script "RootScript.C"
 		     - with an entrance function "RootScript(char * inFileName, char * outFileName, char * outNonRootFile) "
 
-  - UserCode/RootExe/compile.C : script to be used if user's analysis needs to be compiled
+         - UserCode/RootExe/compile.C : script to be used if user's analysis needs to be compiled
 
 
   - UserCode/RawExe : should contain executable to be used in the processing of raw data file
@@ -41,11 +50,14 @@ OVERVIEW:
 		    
 		    - -FROM & -TO flags in the command argument take "run_XXXX" -to "-runXXXX"
  
+  - UserCode/AraSimExe : contains a script to merge the output root files from arasim
+    		        (refer to UserCode/config.pm to see configurations, I tried to put enough comments to guide the user)
 
 
 - Data/ : Default location to contain all output files, contains job description files, logs (main, physics, system) and results of the processing
   	- Data/Results/ should contain all output root files
   	- Data/Results/NonRootOutput should contain non root output files 
+	- I encourage user to point their output directory to "/net/user/$usename/" directory in case they are producing large output files.
 
 
 USAGE:
@@ -58,18 +70,26 @@ USAGE:
   
 - Modify config.pm to meet your needed configurations
 
-- source setEnv_?.?.sh - to set up environmnt for your desired AraRoot version
+- Before running the package, make sure the ROOT environment variables are set, and AraRoot's variables in case the code needs AraRoot libraries
 
 - To start the system run 
-     	   ./run.pl -dir ... -from ... -to ... -email ... -asyn (./run.pl -h for help)
+     	   ./run.pl -dir ... -from ... -to ... -email ... -mode ... -asyn (./run.pl -h for help)
    
 - RUNNING ROOT FILES
      The command line argument should look something like this
-     	" ./run.pl -dir /data/exp/ARA/2011/filtered/L0/ -from runXXXXX.root -to runYYYYY.root -email borachristian@email.com -asyn " 
+     	" ./run.pl -dir /data/exp/ARA/2011/filtered/L0/ -from runXXXXX.root -to runYYYYY.root -email borachristian@email.com -mode root -asyn " 
 
 - RUNNING RAW FILES
   	  The command line argument should look something like this
-	  " ./run.pl -dir /data/exp/ARA/2011/minbias/SPS-ARA/Testbed_2011/event -from run_001000 -to run_001002 -email borachristian@gmail.com -asyn"
+	  " ./run.pl -dir /data/exp/ARA/2011/minbias/SPS-ARA/Testbed_2011/event -from run_001000 -to run_001002 -email borachristian@gmail.com -mode raw -asyn"
+
+- RUNNNING ARASIM MODE
+          The command line argument should look something like this
+	  " ./run.pl -mode arasim -email borachristian@gmail.com -asyn"
+
+	  
+
+	  
 
 
 
