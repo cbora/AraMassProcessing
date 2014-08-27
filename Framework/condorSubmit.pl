@@ -149,6 +149,7 @@ sub SubmitCondorJobAraSim{
                 "-append 'error      = $dataPath/$errFile.\$(Process)' ".
                 "-append 'transfer_input_files = Framework/runAraSim.sh, UserCode/AraSimExe/mergeTree.C, archive.tar.gz' ".
                 "-append 'arguments = $dataPath \$(Process) $level $flag' ".
+		"-append 'request_disk = 50000000' ".
                 "-append 'getEnv = TRUE' ".
                 "-append 'queue $n' $submitFile";
 
@@ -167,9 +168,11 @@ sub SubmitCondorJobMerge{
     my $dataPath = @_[1];
     my $level = @_[2];
     my $flag = 1; # to tell workerscript that it should run merger
+    my $size =@_[3];
 
-
-
+    
+#    $size = $size . "000000";
+#    $size = 40000000;
     print "n = $n, dataPath = $dataPath\n";
     $dataPathInput = "$dataPath/Input/";
     $inFile = "inputFile_".$level."_";
@@ -185,6 +188,7 @@ sub SubmitCondorJobMerge{
                 "-append 'error      = $dataPathLog$errFile.\$(Process)' ".
                 "-append 'transfer_input_files = $dataPathInput/$inFile\$(Process).txt, UserCode/AraSimExe/mergeTree.C, Framework/runAraSimMerger.sh' ".
                 "-append 'arguments = $dataPath \$(Process) $level $flag $dataPathInput/$inFile\$(Process).txt' ".
+		"-append 'request_disk = 50000000' ".
                 "-append 'getEnv = TRUE' ".
                 "-append 'queue $n' $submitFile";
 
