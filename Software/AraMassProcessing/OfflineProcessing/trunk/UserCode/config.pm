@@ -23,7 +23,7 @@ $init{'MODE'}=$DEFAULT_MODE;
 
 # default results path (relative part is allowed)
 #$DEFAULT_RESULTS_PATH = "./Data/";
-$DEFAULT_RESULTS_PATH = "./Data/";
+$DEFAULT_RESULTS_PATH = "/data/user/cbora/";
 $init{'RESULTS_PATH'} = $DEFAULT_RESULTS_PATH;
 
 
@@ -31,7 +31,7 @@ $init{'RESULTS_PATH'} = $DEFAULT_RESULTS_PATH;
 $init{'MAX_TRIES'} = 10080000000; #1440; # 24 hours
 
 # default time length between checking condor tries in sec.
-$init{'TRY_LENGTH'} = 60;	# 1 min
+$init{'TRY_LENGTH'} = 300;	# 5 min
 
 # default email addresses to send report about processing results
 # escape [at] symbol with a backslash (\@)
@@ -64,7 +64,7 @@ $init{'DATA_PATH'} = $DEFAULT_DATA_PATH;
 
 
 # default maximum input file to run in one condor-job
-$DEFAULT_FILE_LIMIT = 2;
+$DEFAULT_FILE_LIMIT = 5;
 $init{'FILE_LIMIT'} = $DEFAULT_FILE_LIMIT;
 
 

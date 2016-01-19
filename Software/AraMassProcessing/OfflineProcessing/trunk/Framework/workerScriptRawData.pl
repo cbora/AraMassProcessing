@@ -4,6 +4,7 @@
 #use warnings;
 #use diagnostics;
 use File::Basename;
+
 # This script executes separate physics analysis executable on each given file.
 print "Shell script to be run on worker nodes\n";
 print "*** command line arguments ***\n";
@@ -24,8 +25,6 @@ print "*** hostname ***\n";
 print `hostname`;
 print "*** ls -1 ***\n";
 print `ls -1`;
-
-do '/home/cbora/Processing/Framework/xmlStatistics.pl';	# Module of creating xml-stat files
 
 # Get status of the process with pid
 sub ProcessRunning{
@@ -81,12 +80,13 @@ sub GetFirstLine {
 my $listFile = "$arg2/Input/job$arg1.txt";
 #print "*** Running ROOT on each file from the list $listFile ***\n";
 
-my $stat = CreateStat("job$arg1.txt");
 
 my $count = 0;
 my $success = 0;
 my $nonZeroExitCode = 0;
 my $terminated = 0;
+
+
 #use POSIX ":sys_wait_h";
 
 
@@ -165,7 +165,9 @@ sub ExeCmd{
 
 print "Total files processed: $count\n";
 print "Total files terminated: $terminated\n"; 
-print "Total files successeful: $success\n";   
+print "Total files successeful: $success\n";
+do "xmlStatistics.pl";	# Module of creating xml-stat files
+my $stat = CreateStat("job$arg1.txt");
 AddValue($stat, {'name'=>'Completed normally', 'digest'=>'sum', 'content'=>1});
 
 $statFileAddr = "$arg2/Logs/Stat/job$arg1.xml";

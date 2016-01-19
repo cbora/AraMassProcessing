@@ -62,6 +62,8 @@ while (1)
 	} elsif ($switch eq "-to") {	# Ending file
 		$initCommandLine{'TO'} = shift;
 		#print "-to $to\n";
+	} elsif ($switch eq "-file") {
+	    $initCommandLine{'INPUT_FILE_NAME'} = shift;
 	} elsif ($switch eq "-syn") {	# [bool] Synchronous execution mode
 		$initCommandLine{'ASYN'} = 0;
 	} elsif ($switch eq "-asyn") {	# [bool] Asynchronous execution mode
@@ -150,9 +152,9 @@ $araSimPath = $Init{'ARASIM_DIR'};
 $executionTime = $Init{'EXECUTION_TIME'};
 $fileLimit = $Init{'FILE_LIMIT'};
 $araSimSectionNumber = $Init{'NUMBER_SECTION'};
+$inputFile = $Init{'INPUT_FILE_NAME'};
 
-
-print "arasim $araSimPath \n";
+#print "arasim $araSimPath \n";
 #Make ready all necessary files
 do "Framework/condorSubmit.pl";
 do "Framework/functionToPrint.pl";
@@ -161,6 +163,7 @@ do "Framework/functionToPrint.pl";
 do "Framework/araSimMode.pl";
 #do "Framework/araSimOutputSearch.pl";
 do "Framework/araSimOutputFileSearch.pl";
+do "Framework/xmlStatistics.pl";
 #Variables used by all modes
 my $mode;
 my $clusterID;
@@ -219,9 +222,17 @@ elsif(($dataType eq "raw")||($dataType eq "Raw")||($dataType eq "RAW")) {
     $mode=2; 
 
     do "Framework/rawMode.pl";
-    do "Framework/loadBalanceRawData.pl";
     do "Framework/fileListRawData.pl";
-    $clusterID = starRawMode($template, $dataPath, $from, $to, $resultPath, $date, $fileLimit);
+
+    if($inputFile eq ""){
+	do "Framework/loadBalanceRawData.pl";
+	$clusterID = startRawMode($template, $dataPath, $from, $to, $resultPath, $date, $fileLimit);
+    }
+    else{
+	do "Framework/loadBalance.pl"; # we use this one since we are iterating over a list of tar files
+	$clusterID = startRawModeWithTextFile($inputFile, $resultPath, $date, $fileLimit);
+    }
+
     print "Jobs are submitted on the cluster: $clusterID\n";
 
     sub GetReadyOrRemove;
