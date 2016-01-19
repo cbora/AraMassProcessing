@@ -24,5 +24,5 @@ getenv = TRUE
 #arguments = $(Process) /home/savdeev/Condor/Data/
 # The number of queued jobs should be variable
 # This line will be substituted in condorSubmit.pl
-queue 1
+#queue 1
 

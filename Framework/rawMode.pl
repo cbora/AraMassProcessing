@@ -48,7 +48,7 @@ sub startRawMode{
 
     printShortExecution();
     
-    $outputPath = $resultPath.$date;
+    $outputPath = $resultPath."/".$date;
     $clusterID = SubmitCondorJobRawData($totalFiles, $outputPath);
     
 
@@ -56,7 +56,55 @@ sub startRawMode{
     return $clusterID;
 
 }
+    
+sub startRawModeWithTextFile{
 
-      
+    #Scripts to run data data files given only text file containing all the files to process.
+    $inputFile =@_[0];
+    $resultPath =@_[1];
+    $date = @_[2];
+    $fileLimit = @_[3];
+   
+    print "Text file mode \n ";
 
+    
+    if (not -e $inputFile){
+	print "|-----------------------------|\n";
+        print "| Input File: " .  $inputFile . " does not exist |\n";
+        print "|-----------------------------|\n";
+
+	
+	print "|-----------------------------|\n";
+        print "| Nothing to do. Terminating  |\n";
+        print "|-----------------------------|\n";
+        close(STDOUT);
+        exit 0;
+    }
+
+    #print the array of files into a text file
+    $inputPath = $resultPath."/".$date."/Input/";
+    $allFiles = $inputPath."L0filesToProcess.txt";
+    `cp $inputFile $allFiles`;
+
+#    PrintFilesListToFile(\@fileList, \$allFiles);
+
+    printCreate();
+    
+    #balance input files into equal number based on the file limit for each section
+    $totalFiles = SeparateTasks($allFiles, $inputPath, $fileLimit);
+
+    print "Total files = $totalFiles \n";
+
+    printSubmit();
+    
+    my $clusterID;
+
+    printShortExecution();
+    
+    $outputPath = $resultPath."/".$date;
+    $clusterID = SubmitCondorJobRawData($totalFiles, $outputPath);
+    
+    return $clusterID;
+
+}
     
